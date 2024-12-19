@@ -3,8 +3,12 @@ from flask import Flask, render_template, request, redirect, url_for, flash, ses
 from flask_sqlalchemy import SQLAlchemy
 from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import datetime
+from dotenv import load_dotenv
 import sqlite3
 import os
+
+#load env
+load_dotenv()
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'secret'
@@ -118,6 +122,7 @@ def toggle_status():
 
 @app.route('/find-barbers')
 def find_barbers():
+    google_maps_key = os.getenv("GOOGLE_MAPS_API_KEY")
     active_barbers = Barber.query.filter_by(is_active=True).all()
     barbers_data = [{
         'id': b.id,
@@ -127,7 +132,7 @@ def find_barbers():
         'wait_time': len(b.current_queue)
     } for b in active_barbers]
     
-    return render_template('find_barbers.html', barbers=barbers_data)
+    return render_template('find_barbers.html', barbers=barbers_data, google_maps_key=google_maps_key)
 
 @app.route('/join-waitlist/<int:barber_id>', methods=['POST'])
 def join_waitlist(barber_id):
