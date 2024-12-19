@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block title %}Dashboard{% endblock %}
+
+{% block content %}
+<div class="dashboard">
+    <h2>Welcome, {{ barber.name }}</h2>
+    
+    <div class="status-toggle">
+        <button id="toggle-status" class="btn {% if barber.is_active %}btn-danger{% else %}btn-success{% endif %}">
+            {% if barber.is_active %}Clock Out{% else %}Clock In{% endif %}
+        </button>
+    </div>
+
+    <div class="waitlist-section">
+        <h3>Current Waitlist</h3>
+        <div class="waitlist">
+            {% if waitlist %}
+                {% for customer in waitlist %}
+                    <div class="waitlist-item">
+                        <span class="customer-name">{{ customer.customer_name }}</span>
+                        <span class="customer-time">Waiting since: {{ customer.timestamp.strftime('%H:%M') }}</span>
+                        <button class="btn btn-small btn-success complete-customer" data-id="{{ customer.id }}">Complete</button>
+                    </div>
+                {% endfor %}
+            {% else %}
+                <p>No customers in waitlist</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
+{% endblock %}
