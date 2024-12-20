@@ -69,8 +69,8 @@ def barber_register():
         
         flash('Registration successful')
         return redirect(url_for('barber_login'))
-        
-    return render_template('barber_register.html')
+    places_api_key = os.getenv("GOOGLE_MAPS_API_KEY")    
+    return render_template('barber_register.html', places_api_key=places_api_key)
 
 @app.route('/barber/login', methods=['GET', 'POST'])
 def barber_login():
