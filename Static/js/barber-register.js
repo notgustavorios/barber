@@ -24,14 +24,6 @@ document.addEventListener('DOMContentLoaded', function() {
             event.preventDefault();
             return;
         }
-
-        // Validate that address coordinates were captured
-        if (!document.getElementById('latitude').value || 
-            !document.getElementById('longitude').value) {
-            alert('Please select a valid address from the dropdown suggestions');
-            event.preventDefault();
-            return;
-        }
     });
 });
 

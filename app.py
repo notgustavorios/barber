@@ -21,9 +21,10 @@ class Barber(db.Model):
     username = db.Column(db.String(80), unique=True, nullable=False)
     password_hash = db.Column(db.String(120), nullable=False)
     name = db.Column(db.String(100), nullable=False)
+    work_address = db.Column(db.String(200), nullable=False)
+    latitude = db.Column(db.Float, nullable=False)
+    longitude = db.Column(db.Float, nullable=False)
     is_active = db.Column(db.Boolean, default=False)
-    latitude = db.Column(db.Float)
-    longitude = db.Column(db.Float)
     current_queue = db.relationship('WaitList', backref='barber', lazy=True)
     
 class WaitList(db.Model):
@@ -53,23 +54,54 @@ def barber_register():
     if request.method == 'POST':
         username = request.form['username']
         password = request.form['password']
+        confirm_password = request.form['confirm_password']
         name = request.form['name']
-        
+        address = request.form['address']
+        latitude = request.form['latitude']
+        longitude = request.form['longitude']
+
+        # Validate required fields
+        if not all([username, password, confirm_password, name, address, latitude, longitude]):
+            flash('All fields are required')
+            return redirect(url_for('barber_register'))
+
+        # Check if passwords match
+        if password != confirm_password:
+            flash('Passwords do not match')
+            return redirect(url_for('barber_register'))
+
+        # Check password length
+        if len(password) < 8:
+            flash('Password must be at least 8 characters long')
+            return redirect(url_for('barber_register'))
+
+        # Check if username already exists
         if Barber.query.filter_by(username=username).first():
             flash('Username already exists')
             return redirect(url_for('barber_register'))
+
+        try:
+            # Create new barber
+            new_barber = Barber(
+                username=username,
+                password_hash=generate_password_hash(password),
+                name=name,
+                work_address=address,  # Add this field to your Barber model
+                latitude=float(latitude),
+                longitude=float(longitude)
+            )
             
-        new_barber = Barber(
-            username=username,
-            password_hash=generate_password_hash(password),
-            name=name
-        )
-        db.session.add(new_barber)
-        db.session.commit()
-        
-        flash('Registration successful')
-        return redirect(url_for('barber_login'))
-    places_api_key = os.getenv("GOOGLE_MAPS_API_KEY")    
+            db.session.add(new_barber)
+            db.session.commit()
+            
+            flash('Registration successful! Please log in.')
+            return redirect(url_for('barber_login'))
+            
+        except Exception as e:
+            db.session.rollback()
+            flash('An error occurred during registration. Please try again.')
+            return redirect(url_for('barber_register'))
+    places_api_key = os.getenv("GOOGLE_MAPS_API_KEY")
     return render_template('barber_register.html', places_api_key=places_api_key)
 
 @app.route('/barber/login', methods=['GET', 'POST'])
