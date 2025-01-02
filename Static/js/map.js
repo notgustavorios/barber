@@ -111,18 +111,28 @@ function loadNearbyBarbers(latitude, longitude) {
                 // Create list item
                 const barberItem = document.createElement('div');
                 barberItem.className = 'barber-item';
+                // barberItem.innerHTML = `
+                //     <h3>
+                //         ${barber.name}
+                //         <span class="distance-badge">${barber.distance} mi</span>
+                //     </h3>
+                //     <p>${barber.address}</p>
+                //     <div class="wait-time">
+                //         Wait time: ${barber.wait_time} customers
+                //     </div>
+                //     <button class="btn btn-primary mt-2" onclick="openWaitlistModal(${barber.id})">
+                //         Join Waitlist
+                //     </button>
+                // `;
                 barberItem.innerHTML = `
-                    <h3>
-                        ${barber.name}
-                        <span class="distance-badge">${barber.distance} mi</span>
-                    </h3>
-                    <p>${barber.address}</p>
-                    <div class="wait-time">
-                        Wait time: ${barber.wait_time} customers
+                    <div class="barber-header">
+                        <h3>${barber.name}</h3>
+                        <span class="wait-time">${barber.wait_time} min<br><small>EST WAIT</small></span>
                     </div>
-                    <button class="btn btn-primary mt-2" onclick="openWaitlistModal(${barber.id})">
-                        Join Waitlist
-                    </button>
+                    <p class="address">${barber.address}</p>
+                    <div class="barber-details">
+                        <span class="status open">Open</span> • Closes 8 PM • <span class="distance">${barber.distance} mi</span>
+                    </div>
                 `;
 
                 // Add click listener to list item
@@ -140,7 +150,7 @@ function loadNearbyBarbers(latitude, longitude) {
             const bounds = new google.maps.LatLngBounds();
             markers.forEach(marker => bounds.extend(marker.getPosition()));
             if (userMarker) bounds.extend(userMarker.getPosition());
-            if (markers.length > 0) map.fitBounds(bounds);
+            // if (markers.length > 0) map.fitBounds(bounds);
         });
 }
 
@@ -194,6 +204,65 @@ const styles = `
     .btn-sm {
         padding: 5px 10px;
         font-size: 12px;
+    }
+    .barber-item {
+        display: flex;
+        flex-direction: column;
+        border: 1px solid #ddd;
+        border-radius: 5px;
+        padding: 15px;
+        margin-bottom: 10px;
+        background-color: #fff;
+    }
+
+    .barber-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .barber-header h3 {
+        margin: 0;
+        font-size: 18px;
+        font-weight: bold;
+    }
+
+    .barber-header .wait-time {
+        text-align: right;
+        font-size: 16px;
+        color: #28a745;
+        font-weight: bold;
+    }
+
+    .barber-header .wait-time small {
+        font-size: 12px;
+        color: #6c757d;
+    }
+
+    .address {
+        font-size: 14px;
+        margin: 5px 0;
+        color: #6c757d;
+    }
+
+    .barber-details {
+        font-size: 14px;
+        color: #6c757d;
+        display: flex;
+        gap: 5px;
+        align-items: center;
+    }
+
+    .barber-details .status {
+        font-weight: bold;
+    }
+
+    .barber-details .status.open {
+        color: #28a745;
+    }
+
+    .barber-details .distance {
+        font-weight: bold;
     }
 `;
 
