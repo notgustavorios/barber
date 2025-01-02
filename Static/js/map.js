@@ -1,7 +1,10 @@
 /* static/js/map.js */
 let map;
 let markers = [];
+let userMarker;
 let infoWindow;
+
+const DEFAULT_RADIUS = 10; //miles
 
 function initMap() {
     // Initialize map with default center
@@ -27,6 +30,11 @@ function initMap() {
                     lat: position.coords.latitude,
                     lng: position.coords.longitude
                 };
+                const userLat = position.coords.latitude
+                const userLng = position.coords.longitude
+                // debug
+                console.log("Latitude: " + userLat)
+                console.log("Longitude:" + userLng)
 
                 map.setCenter(pos);
                 
@@ -46,7 +54,7 @@ function initMap() {
                 });
 
                 // Load active barbers
-                loadActiveBarbers();
+                loadNearbyBarbers(userLat, userLng);
             },
             () => {
                 handleLocationError(true, infoWindow, map.getCenter());
@@ -57,27 +65,23 @@ function initMap() {
     }
 }
 
-function loadActiveBarbers() {
-    fetch('/find-barbers')
+function loadNearbyBarbers(latitude, longitude) {
+    // Clear existing markers
+    markers.forEach(marker => marker.setMap(null));
+    markers = [];
+    
+    // Fetch nearby barbers
+    fetch(`/get-nearby-barbers?lat=${latitude}&lng=${longitude}&radius=${DEFAULT_RADIUS}`)
         .then(response => response.json())
         .then(barbers => {
-            // Clear existing markers
-            markers.forEach(marker => marker.setMap(null));
-            markers = [];
-            
-            // Clear barber list
             const barberList = document.getElementById('barber-list');
-            barberList.innerHTML = '';
+            barberList.innerHTML = barbers.length ? '' : '<div class="no-results">No barbers found nearby</div>';
             
+            // Create markers and list items for each barber
             barbers.forEach(barber => {
-                const position = {
-                    lat: barber.latitude,
-                    lng: barber.longitude
-                };
-
                 // Create marker
                 const marker = new google.maps.Marker({
-                    position: position,
+                    position: { lat: barber.latitude, lng: barber.longitude },
                     map: map,
                     title: barber.name,
                     animation: google.maps.Animation.DROP
@@ -87,7 +91,9 @@ function loadActiveBarbers() {
                 const content = `
                     <div class="info-window">
                         <h3>${barber.name}</h3>
+                        <p>${barber.address}</p>
                         <p>Wait time: ${barber.wait_time} customers</p>
+                        <p>Distance: ${barber.distance} miles</p>
                         <button class="btn btn-primary btn-sm" onclick="openWaitlistModal(${barber.id})">
                             Join Waitlist
                         </button>
@@ -101,21 +107,27 @@ function loadActiveBarbers() {
                 });
 
                 markers.push(marker);
-                
-                // Add to sidebar list
+
+                // Create list item
                 const barberItem = document.createElement('div');
                 barberItem.className = 'barber-item';
                 barberItem.innerHTML = `
-                    <h3>${barber.name}</h3>
-                    <p>Wait time: ${barber.wait_time} customers</p>
-                    <button class="btn btn-primary" onclick="openWaitlistModal(${barber.id})">
+                    <h3>
+                        ${barber.name}
+                        <span class="distance-badge">${barber.distance} mi</span>
+                    </h3>
+                    <p>${barber.address}</p>
+                    <div class="wait-time">
+                        Wait time: ${barber.wait_time} customers
+                    </div>
+                    <button class="btn btn-primary mt-2" onclick="openWaitlistModal(${barber.id})">
                         Join Waitlist
                     </button>
                 `;
 
                 // Add click listener to list item
                 barberItem.addEventListener('click', () => {
-                    map.panTo(position);
+                    map.panTo({ lat: barber.latitude, lng: barber.longitude });
                     map.setZoom(15);
                     infoWindow.setContent(content);
                     infoWindow.open(map, marker);
@@ -123,6 +135,12 @@ function loadActiveBarbers() {
 
                 barberList.appendChild(barberItem);
             });
+
+            // Fit map bounds to include all markers and user location
+            const bounds = new google.maps.LatLngBounds();
+            markers.forEach(marker => bounds.extend(marker.getPosition()));
+            if (userMarker) bounds.extend(userMarker.getPosition());
+            if (markers.length > 0) map.fitBounds(bounds);
         });
 }
 
@@ -182,3 +200,5 @@ const styles = `
 const styleSheet = document.createElement("style");
 styleSheet.textContent = styles;
 document.head.appendChild(styleSheet);
+
+document.addEventListener('DOMContentLoaded', initMap); // not sure about this
