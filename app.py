@@ -1,49 +1,32 @@
 # app.py
 import math
 from flask import Flask, render_template, request, redirect, url_for, flash, session, jsonify
-from flask_sqlalchemy import SQLAlchemy
 from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import datetime
+from flask_migrate import Migrate
 from dotenv import load_dotenv
 import sqlite3
 import os
+from models import db, Barber  # Import db and models
 
-#load env
+# load env
 load_dotenv(override=True) 
 
-app = Flask(__name__)
-app.config['SECRET_KEY'] = 'secret'
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///barber_clips.db'
-db = SQLAlchemy(app)
-
-# Database Models
-class Barber(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    username = db.Column(db.String(80), unique=True, nullable=False)
-    password_hash = db.Column(db.String(120), nullable=False)
-    name = db.Column(db.String(100), nullable=False)
-    work_address = db.Column(db.String(200), nullable=False)
-    latitude = db.Column(db.Float, nullable=False)
-    longitude = db.Column(db.Float, nullable=False)
-    is_active = db.Column(db.Boolean, default=False)
-    current_queue = db.relationship('WaitList', backref='barber', lazy=True)
+def create_app():
+    app = Flask(__name__)
+    app.config['SECRET_KEY'] = 'secret'
+    app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///barber_clips.db'
     
-class WaitList(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    barber_id = db.Column(db.Integer, db.ForeignKey('barber.id'), nullable=False)
-    customer_name = db.Column(db.String(100), nullable=False)
-    phone_number = db.Column(db.String(20), nullable=False)
-    timestamp = db.Column(db.DateTime, default=datetime.utcnow)
-    status = db.Column(db.String(20), default='waiting')  # waiting, completed, cancelled
+    # Initialize extensions
+    db.init_app(app)
+    migrate = Migrate(app, db, render_as_batch=True)
+    
+    with app.app_context():
+        db.create_all()
+    
+    return app
 
-class Service(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(100), nullable=False)
-    price = db.Column(db.Float, nullable=False)
-    description = db.Column(db.Text)
-
-with app.app_context():
-    db.create_all()
+app = create_app()
 
 # Routes
 @app.route('/')
@@ -53,16 +36,17 @@ def home():
 @app.route('/barber/register', methods=['GET', 'POST'])
 def barber_register():
     if request.method == 'POST':
-        username = request.form['username']
         password = request.form['password']
         confirm_password = request.form['confirm_password']
-        name = request.form['name']
+        firstname = request.form['firstname']
+        lastname = request.form['lastname']
         address = request.form['address']
+        email = request.form['email-address']
         latitude = request.form['latitude']
         longitude = request.form['longitude']
 
         # Validate required fields
-        if not all([username, password, confirm_password, name, address, latitude, longitude]):
+        if not all([password, confirm_password, firstname, lastname,  address, latitude, longitude]):
             flash('All fields are required')
             return redirect(url_for('barber_register'))
 
@@ -77,17 +61,17 @@ def barber_register():
             return redirect(url_for('barber_register'))
 
         # Check if username already exists
-        if Barber.query.filter_by(username=username).first():
+        if Barber.query.filter_by(email=email).first():
             flash('Username already exists')
             return redirect(url_for('barber_register'))
 
         try:
             # Create new barber
             new_barber = Barber(
-                username=username,
                 password_hash=generate_password_hash(password),
-                name=name,
-                work_address=address,  # Add this field to your Barber model
+                name = firstname + " " + lastname,
+                email = email,
+                work_address=address,
                 latitude=float(latitude),
                 longitude=float(longitude)
             )
