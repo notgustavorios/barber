@@ -74,9 +74,40 @@ async function loadNearbyBarbers(latitude, longitude) {
             // Create markers and list items for each barber
             barbers.forEach(barber => {
 
-                const waitTime = document.createElement("div");
-                waitTime.className = "wait-list-tag"
-                waitTime.textContent = "17 min."
+                function createWaitListTag(time = 0, unit = 'min') {
+                    // Create main container
+                    const container = document.createElement('div');
+                    container.className = 'marker-container';
+                
+                    // Create marker div
+                    const marker = document.createElement('div');
+                    marker.className = 'marker';
+                
+                    // Create inner marker div
+                    const markerInner = document.createElement('div');
+                    markerInner.className = 'marker-inner';
+                
+                    // Create time paragraph
+                    const timeP = document.createElement('p');
+                    timeP.className = 'time';
+                    timeP.textContent = time;
+                
+                    // Create unit paragraph
+                    const unitP = document.createElement('p');
+                    unitP.className = 'unit';
+                    unitP.textContent = unit;
+                
+                    // Assemble the elements
+                    markerInner.appendChild(timeP);
+                    markerInner.appendChild(unitP);
+                    marker.appendChild(markerInner);
+                    container.appendChild(marker);
+                
+                    return container;
+                }
+
+                // Create wait list tag
+                const waitTime = createWaitListTag(17, 'min');
 
                 // Create marker
                 const marker = new AdvancedMarkerElement({
@@ -216,27 +247,62 @@ const styles = `
     .barber-details .distance {
         font-weight: bold;
     }
-    .wait-list-tag {
-        background-color: #4285F4;
-        border-radius: 8px;
-        color: #FFFFFF;
-        font-size: 14px;
-        padding: 10px 15px;
-        position: relative;
+    .marker-container {
+      position: relative;
+      width: 60px;
+      height: 80px;
     }
 
-    .wait-list-tag::after {
-        content: "";
-        position: absolute;
-        left: 50%;
-        top: 100%;
-        transform: translate(-50%, 0);
-        width: 0;
-        height: 0;
-        border-left: 8px solid transparent;
-        border-right: 8px solid transparent;
-        border-top: 8px solid #4285F4;
+    .marker {
+      position: absolute;
+      width: 44px;
+      height: 44px;
+      background-color: #2d7a5d;
+      border-radius: 50%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
     }
+
+    .marker-inner {
+      width: 34px;
+      height: 34px;
+      background-color: white;
+      border-radius: 50%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .marker::after {
+      content: '';
+      position: absolute;
+      bottom: -7px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 0;
+      height: 0;
+      border-left: 12px solid transparent;
+      border-right: 12px solid transparent;
+      border-top: 11px solid #2d7a5d;
+      z-index: -1;
+    }
+
+    .time {
+      font-size: 14px;
+      font-weight: bold;
+      margin: 0;
+      color: #2d7a5d;
+    }
+
+    .unit {
+      font-size: 10px;
+      margin: -2px 0 0 0;
+      color: #2d7a5d;
+    }
+
 `;
 
 const styleSheet = document.createElement("style");
