@@ -1,28 +1,19 @@
 /* static/js/map.js */
 let map;
 let markers = [];
-let userMarker;
-let infoWindow;
+const DEFAULT_RADIUS = 50; //miles
 
-const DEFAULT_RADIUS = 10; //miles
-
-function initMap() {
+async function initMap() {
     // Initialize map with default center
-    map = new google.maps.Map(document.getElementById('map'), {
-        zoom: 13,
+    const { Map } = await google.maps.importLibrary("maps")
+    const { AdvancedMarkerElement } = await google.maps.importLibrary("marker")
+
+    map = new Map(document.getElementById("map"), {
         center: { lat: 0, lng: 0 },
-        styles: [
-            {
-                "featureType": "poi.business",
-                "elementType": "labels",
-                "stylers": [{ "visibility": "off" }]
-            }
-        ]
-    });
-
-    infoWindow = new google.maps.InfoWindow();
-
-    // Try to get user's location
+        zoom: 13,
+        mapId: "ba8effea0c7c0798"
+    });    
+    // Get user's location
     if (navigator.geolocation) {
         navigator.geolocation.getCurrentPosition(
             (position) => {
@@ -30,31 +21,23 @@ function initMap() {
                     lat: position.coords.latitude,
                     lng: position.coords.longitude
                 };
-                const userLat = position.coords.latitude
-                const userLng = position.coords.longitude
-                // debug
-                console.log("Latitude: " + userLat)
-                console.log("Longitude:" + userLng)
 
-                map.setCenter(pos);
-                
-                // Add a marker for user's location
-                new google.maps.Marker({
-                    position: pos,
+                const userLat = position.coords.latitude;
+                const userLng = position.coords.longitude;
+
+                map.setCenter(pos)
+
+                new AdvancedMarkerElement({
                     map: map,
-                    icon: {
-                        path: google.maps.SymbolPath.CIRCLE,
-                        scale: 8,
-                        fillColor: "#4285F4",
-                        fillOpacity: 1,
-                        strokeWeight: 2,
-                        strokeColor: "#FFFFFF"
-                    },
-                    title: "Your Location"
+                    position: {
+                        lat: userLat,
+                        lng: userLng
+                    }
                 });
 
-                // Load active barbers
-                loadNearbyBarbers(userLat, userLng);
+                // Fill the wait list
+                loadNearbyBarbers(userLat,userLng);
+
             },
             () => {
                 handleLocationError(true, infoWindow, map.getCenter());
@@ -63,12 +46,23 @@ function initMap() {
     } else {
         handleLocationError(false, infoWindow, map.getCenter());
     }
+
+    
+    
+}
+function handleLocationError(browserHasGeolocation, infoWindow, pos) {
+    infoWindow.setPosition(pos);
+    infoWindow.setContent(
+        browserHasGeolocation
+            ? "Error: The Geolocation service failed."
+            : "Error: Your browser doesn't support geolocation."
+    );
+    infoWindow.open(map);
 }
 
-function loadNearbyBarbers(latitude, longitude) {
-    // Clear existing markers
-    markers.forEach(marker => marker.setMap(null));
-    markers = [];
+async function loadNearbyBarbers(latitude, longitude) {
+
+    const { AdvancedMarkerElement } = await google.maps.importLibrary("marker")
     
     // Fetch nearby barbers
     fetch(`/get-nearby-barbers?lat=${latitude}&lng=${longitude}&radius=${DEFAULT_RADIUS}`)
@@ -79,51 +73,22 @@ function loadNearbyBarbers(latitude, longitude) {
             
             // Create markers and list items for each barber
             barbers.forEach(barber => {
+
+                const waitTime = document.createElement("div");
+                waitTime.className = "wait-list-tag"
+                waitTime.textContent = "17 min."
+
                 // Create marker
-                const marker = new google.maps.Marker({
+                const marker = new AdvancedMarkerElement({
                     position: { lat: barber.latitude, lng: barber.longitude },
                     map: map,
-                    title: barber.name,
-                    animation: google.maps.Animation.DROP
+                    content: waitTime
                 });
-
-                // Create info window content
-                const content = `
-                    <div class="info-window">
-                        <h3>${barber.name}</h3>
-                        <p>${barber.address}</p>
-                        <p>Wait time: ${barber.wait_time} customers</p>
-                        <p>Distance: ${barber.distance} miles</p>
-                        <button class="btn btn-primary btn-sm" onclick="openWaitlistModal(${barber.id})">
-                            Join Waitlist
-                        </button>
-                    </div>
-                `;
-
-                // Add click listener to marker
-                marker.addListener('click', () => {
-                    infoWindow.setContent(content);
-                    infoWindow.open(map, marker);
-                });
-
-                markers.push(marker);
 
                 // Create list item
                 const barberItem = document.createElement('div');
                 barberItem.className = 'barber-item';
-                // barberItem.innerHTML = `
-                //     <h3>
-                //         ${barber.name}
-                //         <span class="distance-badge">${barber.distance} mi</span>
-                //     </h3>
-                //     <p>${barber.address}</p>
-                //     <div class="wait-time">
-                //         Wait time: ${barber.wait_time} customers
-                //     </div>
-                //     <button class="btn btn-primary mt-2" onclick="openWaitlistModal(${barber.id})">
-                //         Join Waitlist
-                //     </button>
-                // `;
+
                 barberItem.innerHTML = `
                     <div class="barber-header">
                         <h3>${barber.name}</h3>
@@ -145,24 +110,11 @@ function loadNearbyBarbers(latitude, longitude) {
 
                 barberList.appendChild(barberItem);
             });
-
-            // Fit map bounds to include all markers and user location
-            const bounds = new google.maps.LatLngBounds();
-            markers.forEach(marker => bounds.extend(marker.getPosition()));
-            if (userMarker) bounds.extend(userMarker.getPosition());
-            // if (markers.length > 0) map.fitBounds(bounds);
+            
         });
 }
 
-function handleLocationError(browserHasGeolocation, infoWindow, pos) {
-    infoWindow.setPosition(pos);
-    infoWindow.setContent(
-        browserHasGeolocation
-            ? "Error: The Geolocation service failed."
-            : "Error: Your browser doesn't support geolocation."
-    );
-    infoWindow.open(map);
-}
+
 
 function openWaitlistModal(barberId) {
     const modal = document.getElementById('waitlist-modal');
@@ -264,10 +216,31 @@ const styles = `
     .barber-details .distance {
         font-weight: bold;
     }
+    .wait-list-tag {
+        background-color: #4285F4;
+        border-radius: 8px;
+        color: #FFFFFF;
+        font-size: 14px;
+        padding: 10px 15px;
+        position: relative;
+    }
+
+    .wait-list-tag::after {
+        content: "";
+        position: absolute;
+        left: 50%;
+        top: 100%;
+        transform: translate(-50%, 0);
+        width: 0;
+        height: 0;
+        border-left: 8px solid transparent;
+        border-right: 8px solid transparent;
+        border-top: 8px solid #4285F4;
+    }
 `;
 
 const styleSheet = document.createElement("style");
 styleSheet.textContent = styles;
 document.head.appendChild(styleSheet);
 
-document.addEventListener('DOMContentLoaded', initMap); // not sure about this
+initMap() // async function

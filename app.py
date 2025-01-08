@@ -9,7 +9,7 @@ import sqlite3
 import os
 
 #load env
-load_dotenv()
+load_dotenv(override=True) 
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'secret'
