@@ -11,7 +11,7 @@ async function initMap() {
     map = new Map(document.getElementById("map"), {
         center: { lat: 0, lng: 0 },
         zoom: 13,
-        mapId: "ba8effea0c7c0798"
+        mapId: "17737d3fc3949ab1"
     });    
     // Get user's location
     if (navigator.geolocation) {
@@ -27,12 +27,15 @@ async function initMap() {
 
                 map.setCenter(pos)
 
+                const userMarker = createLocationMarker();
+
                 new AdvancedMarkerElement({
                     map: map,
                     position: {
                         lat: userLat,
                         lng: userLng
-                    }
+                    },
+                    content: userMarker
                 });
 
                 // Fill the wait list
@@ -45,10 +48,7 @@ async function initMap() {
         );
     } else {
         handleLocationError(false, infoWindow, map.getCenter());
-    }
-
-    
-    
+    } 
 }
 function handleLocationError(browserHasGeolocation, infoWindow, pos) {
     infoWindow.setPosition(pos);
@@ -59,6 +59,31 @@ function handleLocationError(browserHasGeolocation, infoWindow, pos) {
     );
     infoWindow.open(map);
 }
+function createLocationMarker(){
+    // Create the main location-marker element
+    const locationMarker = document.createElement('div');
+    locationMarker.className = 'location-marker';
+  
+    // Create the outer-circle element
+    const outerCircle = document.createElement('div');
+    outerCircle.className = 'outer-circle';
+  
+    // Create the pulse element
+    const pulse = document.createElement('div');
+    pulse.className = 'pulse';
+  
+    // Create the center-dot element
+    const centerDot = document.createElement('div');
+    centerDot.className = 'center-dot';
+  
+    // Append the child elements to the location-marker
+    locationMarker.appendChild(outerCircle);
+    locationMarker.appendChild(pulse);
+    locationMarker.appendChild(centerDot);
+  
+    // Return the DOM element
+    return locationMarker;
+  };
 
 async function loadNearbyBarbers(latitude, longitude) {
 
@@ -301,6 +326,52 @@ const styles = `
       font-size: 10px;
       margin: -2px 0 0 0;
       color: #2d7a5d;
+    }
+      .location-marker {
+      position: relative;
+      width: 40px;
+      height: 40px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .center-dot {
+      width: 12px;
+      height: 12px;
+      background-color: #4285f4;
+      border-radius: 50%;
+      position: absolute;
+      z-index: 2;
+      box-shadow: 0 0 0 1px white;
+    }
+
+    .pulse {
+      position: absolute;
+      width: 24px;
+      height: 24px;
+      background-color: rgba(66, 133, 244, 0.2);
+      border-radius: 50%;
+      animation: pulse 2s ease-out infinite;
+    }
+
+    .outer-circle {
+      position: absolute;
+      width: 24px;
+      height: 24px;
+      background-color: rgba(66, 133, 244, 0.1);
+      border-radius: 50%;
+    }
+
+    @keyframes pulse {
+      0% {
+        transform: scale(1);
+        opacity: 1;
+      }
+      100% {
+        transform: scale(2);
+        opacity: 0;
+      }
     }
 
 `;
